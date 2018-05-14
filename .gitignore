@@ -1,0 +1,13 @@
+*.o
+*~
+\#*
+*#
+*.bak
+*.obj
+.vs
+.kdev
+.kdev4
+*.so
+*.a
+*.exe
+
