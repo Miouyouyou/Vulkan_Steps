@@ -76,31 +76,34 @@ void myy_vulkan_devices_print_basic_properties(
 	uint_fast32_t n_devices,
 	VkPhysicalDevice const * __restrict devices)
 {
-	VkPhysicalDeviceProperties current_device_properties;
+	VkPhysicalDeviceProperties current_device_props;
 
 	while(n_devices--) {
 		VkPhysicalDevice current_device =
 			*devices++;
 
 		vkGetPhysicalDeviceProperties(
-			current_device, &current_device_properties);
-		uint32_t const api_version =
-			current_device_properties.apiVersion;
+			current_device, &current_device_props);
+		uint32_t const
+			api_version = current_device_props.apiVersion,
+			driver_version = current_device_props.driverVersion;
 		log_entry(
 			"Name : %s\n"
 			"\tapiVersion    : %d,%d,%d\n"
-			"\tdriverVersion : %d\n"
-			"\tvendorID      : %d\n"
-			"\tdeviceID      : %d\n"
+			"\tdriverVersion : %d,%d,%d\n"
+			"\tvendorID      : 0x%X\n"
+			"\tdeviceID      : 0x%X\n"
 			"\tdeviceType    : %u",
-			current_device_properties.deviceName,
+			current_device_props.deviceName,
 			VK_VERSION_MAJOR(api_version),
 			VK_VERSION_MINOR(api_version),
 			VK_VERSION_PATCH(api_version),
-			current_device_properties.driverVersion,
-			current_device_properties.vendorID,
-			current_device_properties.deviceID,
-			current_device_properties.deviceType);
+			VK_VERSION_MAJOR(driver_version),
+			VK_VERSION_MINOR(driver_version),
+			VK_VERSION_PATCH(driver_version),
+			current_device_props.vendorID,
+			current_device_props.deviceID,
+			current_device_props.deviceType);
 	}
 }
 
@@ -177,21 +180,19 @@ void myy_vulkan_device_queues_print_basic_properties(
 	uint_fast32_t n_queues,
 	VkQueueFamilyProperties const * __restrict queues)
 {
-	while(--n_queues) {
+	while(n_queues--) {
 		VkQueueFlags flags = queues->queueFlags;
 		log_entry("Queue Flags :\n"
 			"\tGraphics        : %s\n"
 			"\tCompute         : %s\n"
 			"\tTransfer        : %s\n"
 			"\tSparse bindings : %s\n"
-			"\tProtected       : %s\n"
 			"queueCount         : %d\n"
 			"timestampValidBits : %d\n",
 			c_boolean_to_string(flags & VK_QUEUE_GRAPHICS_BIT),
 			c_boolean_to_string(flags & VK_QUEUE_COMPUTE_BIT),
 			c_boolean_to_string(flags & VK_QUEUE_TRANSFER_BIT),
 			c_boolean_to_string(flags & VK_QUEUE_SPARSE_BINDING_BIT),
-			c_boolean_to_string(flags & VK_QUEUE_PROTECTED_BIT),
 			queues->queueCount,
 			queues->timestampValidBits);
 		queues++;
