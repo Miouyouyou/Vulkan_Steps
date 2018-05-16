@@ -1,11 +1,19 @@
 #include "vulkan/vulkan.h"
 #include <stdio.h>
 
-/* I tend to call this function log.
- * But that generate issues when calling math functions... */
-#define log_entry(fmt, ...) \
-	fprintf(stderr, "[%s:%s():%d] " fmt "\n", \
-		__FILE__, __func__, __LINE__, ##__VA_ARGS__ )
+#include <myy/log_helpers.h>
+
+int myy_vulkan_create_instance(VkInstance * __restrict);
+void myy_vulkan_devices_print_basic_properties(
+	uint_fast32_t const n_devices,
+	VkPhysicalDevice const * __restrict devices);
+int myy_vulkan_devices_enumerate_from(
+	VkInstance const myy_vulkan_instance);
+void myy_vulkan_device_queues_print_basic_properties(
+	uint_fast32_t n_queues,
+	VkQueueFamilyProperties const * __restrict queues);
+int myy_vulkan_device_queues_enumerate(
+	VkPhysicalDevice const myy_chosen_device);
 
 /* I'm writing this code while reading :
  * https://software.intel.com/en-us/articles/api-without-secrets-introduction-to-vulkan-part-1
@@ -79,8 +87,7 @@ void myy_vulkan_devices_print_basic_properties(
 	VkPhysicalDeviceProperties current_device_props;
 
 	while(n_devices--) {
-		VkPhysicalDevice current_device =
-			*devices++;
+		VkPhysicalDevice current_device = *devices++;
 
 		vkGetPhysicalDeviceProperties(
 			current_device, &current_device_props);
@@ -104,13 +111,12 @@ void myy_vulkan_devices_print_basic_properties(
 			current_device_props.vendorID,
 			current_device_props.deviceID,
 			current_device_props.deviceType);
+		myy_vulkan_device_queues_enumerate(current_device);
 	}
 }
 
-
 int myy_vulkan_devices_enumerate_from(
-	VkInstance const myy_vulkan_instance,
-	VkPhysicalDevice * __restrict myy_chosen_physical_device)
+	VkInstance const myy_vulkan_instance)
 {
 
 	/* Calling vkEnumeratePhysicalDevices with :
@@ -156,14 +162,6 @@ int myy_vulkan_devices_enumerate_from(
 	
 	myy_vulkan_devices_print_basic_properties(n_devices, physical_devices);
 
-	/* We take the first device, because :
-	* if it's first, it's better, right ?
-	* 
-	* Just kidding, I'm just lazy.
-	*/
-
-	*myy_chosen_physical_device = physical_devices[0];
-
 	success = 1;
 
 
@@ -182,13 +180,13 @@ void myy_vulkan_device_queues_print_basic_properties(
 {
 	while(n_queues--) {
 		VkQueueFlags flags = queues->queueFlags;
-		log_entry("Queue Flags :\n"
-			"\tGraphics        : %s\n"
-			"\tCompute         : %s\n"
-			"\tTransfer        : %s\n"
-			"\tSparse bindings : %s\n"
-			"queueCount         : %d\n"
-			"timestampValidBits : %d\n",
+		log_entry("\tQueue Flags :\n"
+			"\t\tGraphics        : %s\n"
+			"\t\tCompute         : %s\n"
+			"\t\tTransfer        : %s\n"
+			"\t\tSparse bindings : %s\n"
+			"\tqueueCount         : %d\n"
+			"\ttimestampValidBits : %d\n",
 			c_boolean_to_string(flags & VK_QUEUE_GRAPHICS_BIT),
 			c_boolean_to_string(flags & VK_QUEUE_COMPUTE_BIT),
 			c_boolean_to_string(flags & VK_QUEUE_TRANSFER_BIT),
@@ -200,7 +198,6 @@ void myy_vulkan_device_queues_print_basic_properties(
 }
 
 int myy_vulkan_device_queues_enumerate(
-	VkInstance const myy_app_vulkan_instance,
 	VkPhysicalDevice const myy_chosen_device)
 {
 	uint32_t n_queues = 0;
@@ -252,8 +249,7 @@ int main() {
 		goto no_vulkan_instance;
 	}
 
-	ret = myy_vulkan_devices_enumerate_from(
-		myy_app_vulkan_instance, &myy_chosen_physical_device);
+	ret = myy_vulkan_devices_enumerate_from(myy_app_vulkan_instance);
 
 	if (!ret)
 	{
@@ -261,9 +257,6 @@ int main() {
 		status = status_could_not_enumerate_physical_devices;
 		goto no_devices;
 	}
-
-	myy_vulkan_device_queues_enumerate(
-		myy_app_vulkan_instance, myy_chosen_physical_device);
 
 cleanup:
 no_devices:
